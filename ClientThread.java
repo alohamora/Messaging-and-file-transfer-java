@@ -43,6 +43,11 @@ public class ClientThread extends Thread{
         else if(cmd_option.equals("create_folder")){
             create_folder(st.nextToken());
         }
+        else if(cmd_option.equals("move_file")){
+            String source = st.nextToken();
+            String dest = st.nextToken();
+            move_file(source, dest);
+        }
     }
 
     public void create_folder(String foldername){
@@ -55,6 +60,33 @@ public class ClientThread extends Thread{
             }
             else{
                 clientOutput.writeUTF(Server.get_time_string() + "Folder already present on Server");
+            }
+        }
+        catch(IOException e){
+            System.out.println(e.toString());
+        }
+    }
+
+    public void move_file(String source, String dest){
+        try{
+            DataOutputStream clientOutput = new DataOutputStream(clientSock.getOutputStream());
+            File source_file = new File(Server.SERVER_FOLDER + username + "/" + source);
+            File dest_file = new File(Server.SERVER_FOLDER + username + "/" + dest);
+            if(source_file.isFile() && (! dest_file.isDirectory() )){
+                if(source_file.renameTo(dest_file)){
+                    source_file.delete();
+                    clientOutput.writeUTF(Server.get_time_string() + "File moved successfully");
+                }
+                else    clientOutput.writeUTF(Server.get_time_string() + "Could not move file");
+            }
+            else if(source_file.isDirectory()){
+                clientOutput.writeUTF(Server.get_time_string() + "Given source path is a folder");
+            }
+            else if(!source_file.exists()){
+                clientOutput.writeUTF(Server.get_time_string() + "Given source path does not exists");
+            }
+            else if(dest_file.isDirectory()){
+                clientOutput.writeUTF(Server.get_time_string() + "Given destination path is an existing folder");
             }
         }
         catch(IOException e){
