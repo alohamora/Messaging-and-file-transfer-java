@@ -25,33 +25,29 @@ public class ClientThread extends Thread{
     public void execute_command(String cmd){
         StringTokenizer st = new StringTokenizer(cmd);
         String cmd_option = st.nextToken();
-        if(cmd_option.equals("create_group") && st.countTokens() > 0){
+        if(cmd_option.equals("create_group") && st.countTokens() > 0)
             Server.create_group(st.nextToken(), username, clientSock);
-        }
-        else if(cmd_option.equals("join_group") && st.countTokens() > 0){
+        else if(cmd_option.equals("join_group") && st.countTokens() > 0)
             Server.join_group(st.nextToken(), username, clientSock);
-        }
-        else if(cmd_option.equals("leave_group") && st.countTokens() > 0){
+        else if(cmd_option.equals("leave_group") && st.countTokens() > 0)
             Server.leave_group(st.nextToken(), username, clientSock);
-        }
-        else if(cmd_option.equals("list_groups")){
+        else if(cmd_option.equals("list_groups"))
             Server.list_groups(clientSock);
-        }
         else if(cmd_option.equals("share_msg") && st.countTokens() > 1){
             String groupname = st.nextToken();
             Server.share_msg(username, groupname, clientSock, st);
         }
-        else if(cmd_option.equals("list_details") && st.countTokens() > 0){
+        else if(cmd_option.equals("list_details") && st.countTokens() > 0)
             Server.show_details(st.nextToken(), clientSock);
-        }
-        else if(cmd_option.equals("create_folder") && st.countTokens() > 0){
+        else if(cmd_option.equals("create_folder") && st.countTokens() > 0)
             create_folder(st.nextToken());
-        }
         else if(cmd_option.equals("move_file") && st.countTokens() > 1){
             String source = st.nextToken();
             String dest = st.nextToken();
             move_file(source, dest);
         }
+        else if(cmd_option.equals("upload") && st.countTokens() > 1)
+            upload_file(st);
         else{
             try{
                 DataOutputStream clientOutput = new DataOutputStream(clientSock.getOutputStream());
@@ -101,6 +97,42 @@ public class ClientThread extends Thread{
             else if(dest_file.isDirectory()){
                 clientOutput.writeUTF(Server.get_time_string() + "Given destination path is an existing folder");
             }
+        }
+        catch(IOException e){
+            System.out.println(e.toString());
+        }
+    }
+
+    public void upload_file(StringTokenizer st){
+        try{
+            String[] filetokens = st.nextToken().split("/");
+            String filename = filetokens[filetokens.length - 1];
+            int fileSizeRem = Integer.parseInt(st.nextToken());
+            File file = new File(Server.SERVER_FOLDER + username + "/" + filename);
+            file.createNewFile();
+            FileOutputStream fpout = new FileOutputStream(Server.SERVER_FOLDER + username + "/" + filename);
+            while(fileSizeRem > 0){
+                DataInputStream clientInput = new DataInputStream(clientSock.getInputStream());
+                byte[] data = new byte[Integer.min(fileSizeRem, 1000)];
+                clientInput.read(data, 0, Integer.min(fileSizeRem, 1000));
+                fpout.write(data, 0, Integer.min(fileSizeRem, 1000));
+                fileSizeRem -= 1000;
+            }
+            fpout.close();
+            DataOutputStream clientOutput = new DataOutputStream(clientSock.getOutputStream());
+            clientOutput.writeUTF(Server.get_time_string() + "File uploaded");
+            System.out.println(Server.get_time_string() + "File uploaded for user:" + username + ", File Name: " + filename);
+        }
+        catch(IOException e){
+            throw_file_upload_error();
+            System.out.println(e.toString());
+        }
+    }
+
+    void throw_file_upload_error(){
+        try{
+            DataOutputStream clientOutput = new DataOutputStream(clientSock.getOutputStream());
+            clientOutput.writeUTF(Server.get_time_string() + "Unable to upload file"); 
         }
         catch(IOException e){
             System.out.println(e.toString());
