@@ -76,4 +76,35 @@ class Group {
             System.out.println(e.toString());
         }
     }
+
+    public void show_details(Socket clientSocket){
+        StringBuilder out = new StringBuilder();
+        try{
+            DataOutputStream dout = new DataOutputStream(clientSocket.getOutputStream());
+            out.append(Server.get_time_string() + "Showing details for group: " + groupName + "\n");
+            for(int i=0;i<members.size();i++){
+                out.append("*************************\n");
+                out.append("Files of user: " + members.get(i) + "\n");
+                out.append("*************************\n");
+                out.append(RecursivePrint("", new File(Server.SERVER_FOLDER + members.get(i)).listFiles()));
+            }
+            dout.writeUTF(out.toString());
+        }
+        catch(IOException e){
+            System.out.println(e.toString());
+        }
+    }
+
+    static StringBuilder RecursivePrint(String prefix, File[] arr){
+        StringBuilder sb = new StringBuilder();
+        for(int index=0;index<arr.length;index++){
+            if(arr[index].isFile())
+                sb.append(prefix + arr[index].getName() + "\n"); 
+            else if(arr[index].isDirectory()){ 
+                sb.append(prefix + arr[index].getName() + "/" + "\n");
+                sb.append(RecursivePrint(prefix + arr[index].getName() + "/", arr[index].listFiles())); 
+            }
+        }
+        return sb;
+   }
 }

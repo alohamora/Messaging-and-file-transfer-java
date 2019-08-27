@@ -40,6 +40,9 @@ public class ClientThread extends Thread{
         else if(cmd_option.equals("share_msg")){
             Server.share_msg(username, clientSock, st);
         }
+        else if(cmd_option.equals("list_details")){
+            Server.show_details(st.nextToken(), clientSock);
+        }
         else if(cmd_option.equals("create_folder")){
             create_folder(st.nextToken());
         }

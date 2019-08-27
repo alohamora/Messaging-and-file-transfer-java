@@ -196,6 +196,22 @@ public class Server {
         }
     }
 
+    public static void show_details(String groupName, Socket clientSock){
+        try{
+            DataOutputStream dout = new DataOutputStream(clientSock.getOutputStream());
+            for(int i=0;i<groups.size();i++){
+                if(groups.get(i).groupName.equals(groupName)){
+                    groups.get(i).show_details(clientSock);
+                    return ;
+                }
+            }
+            dout.writeUTF(get_time_string() + "No group with the given name");
+        }
+        catch(IOException e){
+            System.out.println(e.toString());
+        }
+    }
+
     public static String get_time_string(){
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");  
         LocalDateTime now = LocalDateTime.now();  
