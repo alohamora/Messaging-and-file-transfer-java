@@ -45,25 +45,33 @@ public class Server {
         }
     }
 
-    public static boolean check_username_add_user(Socket ClientSock) throws IOException{
-        if(Users.size() == max_clients){
-            System.out.println("Could not login client...Maximum capacity reached for server");
-            ClientSock.close();
-            return false;
-        }
-        else{
-            DataInputStream clientInput = new DataInputStream(ClientSock.getInputStream());
-            String username = clientInput.readUTF();
-            if(Users.contains(username)){
-                System.out.println(get_time_string() + "Could not login user " + username + "...a client with same username is connected");
+    public static boolean check_username_add_user(Socket ClientSock){
+        try{
+            DataOutputStream dout = new DataOutputStream(ClientSock.getOutputStream());
+            if(Users.size() == max_clients){
+                dout.writeUTF(get_time_string() + "Could not login client...Maximum capacity reached for server");
+                System.out.println(get_time_string() + "Could not login client...Maximum capacity reached for server");
                 ClientSock.close();
                 return false;
             }
             else{
-                Users.add(username);
-                clientSockets.add(ClientSock);
-                System.out.println(get_time_string() + username + " connected to server");
+                DataInputStream clientInput = new DataInputStream(ClientSock.getInputStream());
+                String username = clientInput.readUTF();
+                if(Users.contains(username)){
+                    dout.writeUTF(get_time_string() + "Could not login user " + username + "...a client with same username is connected");
+                    System.out.println(get_time_string() + "Could not login user " + username + "...a client with same username is connected");
+                    ClientSock.close();
+                    return false;
+                }
+                else{
+                    Users.add(username);
+                    clientSockets.add(ClientSock);
+                    System.out.println(get_time_string() + username + " connected to server");
+                }
             }
+        }
+        catch(IOException e){
+            System.out.println(e.toString());
         }
         return true;
     }
