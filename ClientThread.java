@@ -40,5 +40,25 @@ public class ClientThread extends Thread{
         else if(cmd_option.equals("share_msg")){
             Server.share_msg(username, clientSock, st);
         }
+        else if(cmd_option.equals("create_folder")){
+            create_folder(st.nextToken());
+        }
+    }
+
+    public void create_folder(String foldername){
+        try{
+            DataOutputStream clientOutput = new DataOutputStream(clientSock.getOutputStream());
+            File folder = new File(Server.SERVER_FOLDER + username + "/" + foldername);
+            if (!folder.exists()){
+                if(folder.mkdir())  clientOutput.writeUTF(Server.get_time_string() + "Folder created");
+                else    clientOutput.writeUTF(Server.get_time_string() + "Could not create folder");
+            }
+            else{
+                clientOutput.writeUTF(Server.get_time_string() + "Folder already present on Server");
+            }
+        }
+        catch(IOException e){
+            System.out.println(e.toString());
+        }
     }
 }

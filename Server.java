@@ -8,6 +8,7 @@ public class Server {
     static String IP_ADDR = "127.0.0.1";
     static int PORT = 6969;
     static int max_clients = 10;
+    public static String SERVER_FOLDER = "ServerDir/";
     public static Vector<String> Users;
     public static Vector<Socket> clientSockets;
     public static Map<String, Group> clientGroupMapping;
@@ -24,6 +25,8 @@ public class Server {
             Runtime.getRuntime().addShutdownHook(new ShutDownThread());
             System.out.println(sb.append(get_time_string() + "Server running on port: ").append(PORT));
             sb.delete(0, sb.length());
+            File server = new File(SERVER_FOLDER);
+            if(!server.exists())    server.mkdir();
         }
         catch(IOException e){
             sb.append("Could not create server socket-> ").append(e.toString());
@@ -64,6 +67,9 @@ public class Server {
                     return false;
                 }
                 else{
+                    String foldername = SERVER_FOLDER + username;
+                    File userFolder = new File(foldername);
+                    userFolder.mkdir();
                     Users.add(username);
                     clientSockets.add(ClientSock);
                     System.out.println(get_time_string() + username + " connected to server");
