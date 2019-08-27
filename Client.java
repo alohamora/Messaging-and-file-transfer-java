@@ -5,6 +5,7 @@ public class Client {
     static String IP_ADDR = "127.0.0.1";
     static int PORT = 6969;
     static Socket clientSock;
+    static DatagramSocket clientSockUDP;
     static String username;
     static DataOutputStream clientOutput;
     static DataInputStream clientInput;
@@ -14,6 +15,7 @@ public class Client {
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(System.in));
             username = Client.getUsername(args);
             clientSock = new Socket(IP_ADDR, PORT);
+            clientSockUDP = new DatagramSocket();
             clientOutput = new DataOutputStream(clientSock.getOutputStream());
             clientInput = new DataInputStream(clientSock.getInputStream());
             Thread messageHandler = new Thread(new MessageHandler(clientInput));
@@ -57,22 +59,6 @@ public class Client {
         return -1;
     }
 
-    static byte[] read_file(String input, long fileSize){
-        try{
-            String[] tokens = input.split(" ");      
-            File file = new File(tokens[1]);
-            InputStream in = new BufferedInputStream(new FileInputStream(file));
-            byte[] buf = new byte[(int)file.length()];
-            in.read(buf);
-            in.close();
-            return buf;
-        }
-        catch(IOException e){
-            System.out.println(e.toString());
-        }
-        return new byte[0];
-    }
-
     static void upload_file(String input, DataOutput clientOutput){
         try{
             int fileSize = (int)check_file_size(input);
@@ -84,7 +70,13 @@ public class Client {
                 while(fileSize > 0){
                     byte[] buf = new byte[Integer.min(fileSize, 1000)];
                     in.read(buf, 0, Integer.min(fileSize, 1000));
-                    clientOutput.write(buf, 0, Integer.min(fileSize, 1000));
+                    if(tokens[0].equals("upload"))
+                        clientOutput.write(buf, 0, Integer.min(fileSize, 1000));
+                    else{
+                        DatagramPacket sendPacket = new DatagramPacket(buf,Integer.min(fileSize, 1000),InetAddress.getByName(IP_ADDR),PORT+1);
+                        clientSockUDP.send(sendPacket);
+                        Thread.sleep(1);
+                    }
                     fileSize -= 1000;
                 }
                 in.close();

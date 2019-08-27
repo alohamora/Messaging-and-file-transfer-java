@@ -46,8 +46,8 @@ public class ClientThread extends Thread{
             String dest = st.nextToken();
             move_file(source, dest);
         }
-        else if(cmd_option.equals("upload") && st.countTokens() > 1)
-            upload_file(st);
+        else if(cmd_option.contains("upload") && st.countTokens() > 1)
+            upload_file(cmd_option, st);
         else{
             try{
                 DataOutputStream clientOutput = new DataOutputStream(clientSock.getOutputStream());
@@ -103,7 +103,7 @@ public class ClientThread extends Thread{
         }
     }
 
-    public void upload_file(StringTokenizer st){
+    public void upload_file(String cmd, StringTokenizer st){
         try{
             String[] filetokens = st.nextToken().split("/");
             String filename = filetokens[filetokens.length - 1];
@@ -114,7 +114,12 @@ public class ClientThread extends Thread{
             while(fileSizeRem > 0){
                 DataInputStream clientInput = new DataInputStream(clientSock.getInputStream());
                 byte[] data = new byte[Integer.min(fileSizeRem, 1000)];
-                clientInput.read(data, 0, Integer.min(fileSizeRem, 1000));
+                if(cmd.equals("upload"))
+                    clientInput.read(data, 0, Integer.min(fileSizeRem, 1000));
+                else{
+                    DatagramPacket recvPacket = new DatagramPacket(data,Integer.min(fileSizeRem, 1000));
+                    Server.sockUDP.receive(recvPacket);
+                }
                 fpout.write(data, 0, Integer.min(fileSizeRem, 1000));
                 fileSizeRem -= 1000;
             }

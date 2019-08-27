@@ -14,6 +14,7 @@ public class Server {
     public static Map<String, Set<Group>> clientGroupMapping;
     public static Vector<Group> groups;
     static ServerSocket serverSocket;
+    static DatagramSocket sockUDP;
     public static void main(String[] args) {
         StringBuffer sb = new StringBuffer();
         Users = new Vector<String>(max_clients);
@@ -22,6 +23,7 @@ public class Server {
         clientGroupMapping = new HashMap<String, Set<Group>>();
         try{
             serverSocket = new ServerSocket(PORT);
+            sockUDP = new DatagramSocket(PORT + 1);
             Runtime.getRuntime().addShutdownHook(new ShutDownThread());
             System.out.println(sb.append(get_time_string() + "Server running on port: ").append(PORT));
             sb.delete(0, sb.length());
