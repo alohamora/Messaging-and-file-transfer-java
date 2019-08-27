@@ -11,7 +11,7 @@ public class Server {
     public static String SERVER_FOLDER = "ServerDir/";
     public static Vector<String> Users;
     public static Vector<Socket> clientSockets;
-    public static Map<String, Group> clientGroupMapping;
+    public static Map<String, Set<Group>> clientGroupMapping;
     public static Vector<Group> groups;
     static ServerSocket serverSocket;
     public static void main(String[] args) {
@@ -19,7 +19,7 @@ public class Server {
         Users = new Vector<String>(max_clients);
         clientSockets = new Vector<Socket>(max_clients);
         groups = new Vector<Group>(max_clients);
-        clientGroupMapping = new HashMap<String, Group>();
+        clientGroupMapping = new HashMap<String, Set<Group>>();
         try{
             serverSocket = new ServerSocket(PORT);
             Runtime.getRuntime().addShutdownHook(new ShutDownThread());
@@ -67,9 +67,9 @@ public class Server {
                     return false;
                 }
                 else{
-                    String foldername = SERVER_FOLDER + username;
-                    File userFolder = new File(foldername);
+                    File userFolder = new File(SERVER_FOLDER + username);
                     userFolder.mkdir();
+                    clientGroupMapping.put(username, new HashSet<Group>());
                     Users.add(username);
                     clientSockets.add(ClientSock);
                     System.out.println(get_time_string() + username + " connected to server");
@@ -84,10 +84,12 @@ public class Server {
     public static synchronized void delete_user(String username, Socket clientSock){
         System.out.println(get_time_string() + username + " disconnected");
         if(clientGroupMapping.containsKey(username)){
-            int groupLen = clientGroupMapping.get(username).remove_user(username, clientSock, false);
-            if(groupLen == 0){
-                groups.remove(clientGroupMapping.get(username));
-                System.out.println(get_time_string() + "Removed group " + clientGroupMapping.get(username).groupName);
+            for(Group group: clientGroupMapping.get(username)){
+                int groupLen = group.remove_user(username, clientSock, false);
+                if(groupLen == 0){
+                    groups.remove(group);
+                    System.out.println(get_time_string() + "Removed group " + group.groupName);
+                }
             }
             clientGroupMapping.remove(username);
         }
@@ -113,7 +115,7 @@ public class Server {
             dout.writeUTF(get_time_string() + "Created group");
             Group groupObj = new Group(groupName, username, clientSock);
             groups.add(groupObj);
-            clientGroupMapping.put(username, groupObj);
+            clientGroupMapping.get(username).add(groupObj);
         }
         catch(IOException e){
             System.out.println(e.toString());
@@ -123,13 +125,10 @@ public class Server {
     public static synchronized void join_group(String groupName, String username, Socket clientSock){
         try{
             DataOutputStream dout = new DataOutputStream(clientSock.getOutputStream());
-            if(clientGroupMapping.containsKey(username)){
-                clientGroupMapping.get(username).remove_user(username, clientSock, false);
-            }
             for(int i=0;i<groups.size();i++){
                 if(groups.get(i).groupName.equals(groupName)){
                     groups.get(i).add_user(username, clientSock);
-                    clientGroupMapping.put(username, groups.get(i));
+                    clientGroupMapping.get(username).add(groups.get(i));
                     return ;
                 }
             }
@@ -146,10 +145,12 @@ public class Server {
             for(int i=0;i<groups.size();i++){
                 if(groups.get(i).groupName.equals(groupName)){
                     if(groups.get(i).remove_user(username, clientSock, true) == 0){
+                        clientGroupMapping.get(username).remove(groups.get(i));
                         System.out.println(get_time_string() + "Removed group " + groups.get(i).groupName);
                         groups.remove(groups.get(i));
                     }
-                    clientGroupMapping.remove(username);
+                    else
+                        clientGroupMapping.get(username).remove(groups.get(i));
                     return ;
                 }
             }
@@ -181,14 +182,17 @@ public class Server {
         }
     }
 
-    public static void share_msg(String username, Socket clientSock, StringTokenizer st){
+    public static void share_msg(String username, String groupname, Socket clientSock, StringTokenizer st){
         try{
             DataOutputStream dout = new DataOutputStream(clientSock.getOutputStream());   
             if(!clientGroupMapping.containsKey(username)){
                 dout.writeUTF(get_time_string() + "User is not part of any group");
             }
             else{
-                clientGroupMapping.get(username).share_msg(username, st);
+                for(Group group : clientGroupMapping.get(username)){
+                    if(group.groupName.equals(groupname))
+                        group.share_msg(username, st);
+                }
             }
         }
         catch(IOException e){

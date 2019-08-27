@@ -25,31 +25,41 @@ public class ClientThread extends Thread{
     public void execute_command(String cmd){
         StringTokenizer st = new StringTokenizer(cmd);
         String cmd_option = st.nextToken();
-        if(cmd_option.equals("create_group")){
+        if(cmd_option.equals("create_group") && st.countTokens() > 0){
             Server.create_group(st.nextToken(), username, clientSock);
         }
-        else if(cmd_option.equals("join_group")){
+        else if(cmd_option.equals("join_group") && st.countTokens() > 0){
             Server.join_group(st.nextToken(), username, clientSock);
         }
-        else if(cmd_option.equals("leave_group")){
+        else if(cmd_option.equals("leave_group") && st.countTokens() > 0){
             Server.leave_group(st.nextToken(), username, clientSock);
         }
         else if(cmd_option.equals("list_groups")){
             Server.list_groups(clientSock);
         }
-        else if(cmd_option.equals("share_msg")){
-            Server.share_msg(username, clientSock, st);
+        else if(cmd_option.equals("share_msg") && st.countTokens() > 1){
+            String groupname = st.nextToken();
+            Server.share_msg(username, groupname, clientSock, st);
         }
-        else if(cmd_option.equals("list_details")){
+        else if(cmd_option.equals("list_details") && st.countTokens() > 0){
             Server.show_details(st.nextToken(), clientSock);
         }
-        else if(cmd_option.equals("create_folder")){
+        else if(cmd_option.equals("create_folder") && st.countTokens() > 0){
             create_folder(st.nextToken());
         }
-        else if(cmd_option.equals("move_file")){
+        else if(cmd_option.equals("move_file") && st.countTokens() > 1){
             String source = st.nextToken();
             String dest = st.nextToken();
             move_file(source, dest);
+        }
+        else{
+            try{
+                DataOutputStream clientOutput = new DataOutputStream(clientSock.getOutputStream());
+                clientOutput.writeUTF(Server.get_time_string() + "Invalid command format passed");
+            }
+            catch(IOException e){
+                System.out.println(e.toString());
+            }   
         }
     }
 
