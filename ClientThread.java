@@ -48,6 +48,8 @@ public class ClientThread extends Thread{
         }
         else if(cmd_option.contains("upload") && st.countTokens() > 1)
             upload_file(cmd_option, st);
+        else if(cmd_option.equals("get_file") && st.countTokens() > 0)
+            download_file(st.nextToken());
         else{
             try{
                 DataOutputStream clientOutput = new DataOutputStream(clientSock.getOutputStream());
@@ -103,16 +105,43 @@ public class ClientThread extends Thread{
         }
     }
 
+    public void download_file(String filename){
+        try{
+            DataOutputStream clientOutput = new DataOutputStream(clientSock.getOutputStream());
+            File file = new File(Server.SERVER_FOLDER + username + "/" + filename);
+            if(file.isFile()){
+                clientOutput.writeUTF("start-download " + filename + " " + file.length());
+                InputStream in = new BufferedInputStream(new FileInputStream(file));
+                int fileSize = (int)file.length();
+                while(fileSize > 0){
+                    byte[] buf = new byte[Integer.min(fileSize, 1000)];
+                    in.read(buf, 0, Integer.min(fileSize, 1000));
+                    clientOutput.write(buf, 0, Integer.min(fileSize, 1000));
+                    fileSize -= 1000;
+                }
+                in.close();
+                clientOutput.writeUTF(Server.get_time_string() + "File downloaded");
+                System.out.println(Server.get_time_string() + "File downloaded for user:" + username + ", File Name: " + filename);
+            }
+            else if(file.isDirectory())
+                clientOutput.writeUTF(Server.get_time_string() + "Given path is a folder");
+            else
+                clientOutput.writeUTF(Server.get_time_string() + "Given path does not exist");
+        }
+        catch(IOException e){
+            System.out.println(e.toString());
+        }
+    }
     public void upload_file(String cmd, StringTokenizer st){
         try{
             String[] filetokens = st.nextToken().split("/");
             String filename = filetokens[filetokens.length - 1];
             int fileSizeRem = Integer.parseInt(st.nextToken());
+            DataInputStream clientInput = new DataInputStream(clientSock.getInputStream());
             File file = new File(Server.SERVER_FOLDER + username + "/" + filename);
             file.createNewFile();
             FileOutputStream fpout = new FileOutputStream(Server.SERVER_FOLDER + username + "/" + filename);
             while(fileSizeRem > 0){
-                DataInputStream clientInput = new DataInputStream(clientSock.getInputStream());
                 byte[] data = new byte[Integer.min(fileSizeRem, 1000)];
                 if(cmd.equals("upload"))
                     clientInput.read(data, 0, Integer.min(fileSizeRem, 1000));

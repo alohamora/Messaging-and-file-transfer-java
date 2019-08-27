@@ -4,6 +4,7 @@ import java.net.*;
 public class Client {
     static String IP_ADDR = "127.0.0.1";
     static int PORT = 6969;
+    static String CLIENT_FOLDER = "ClientDir/";
     static Socket clientSock;
     static DatagramSocket clientSockUDP;
     static String username;
@@ -18,6 +19,8 @@ public class Client {
             clientSockUDP = new DatagramSocket();
             clientOutput = new DataOutputStream(clientSock.getOutputStream());
             clientInput = new DataInputStream(clientSock.getInputStream());
+            File client = new File(CLIENT_FOLDER);
+            if(!client.exists())    client.mkdir();
             Thread messageHandler = new Thread(new MessageHandler(clientInput));
             messageHandler.start();
             clientOutput.writeUTF(username);
@@ -100,12 +103,31 @@ class MessageHandler implements Runnable{
             String serverOutput = new String();
             while(true){
                 serverOutput = server.readUTF();
-                System.out.println(serverOutput);
+                if(serverOutput.contains("start-download"))   download_file(serverOutput);
+                else System.out.println(serverOutput);
             }
         }
         catch(IOException e){
             System.out.println("Connection to server lost");
             System.exit(0);
+        }
+    }
+
+    void download_file(String cmd){
+        try{
+            String[] tokens = cmd.split(" ");
+            int fileSizeRem = Integer.parseInt(tokens[2]);
+            FileOutputStream fpout = new FileOutputStream(Client.CLIENT_FOLDER + "/" + tokens[1]);
+            while(fileSizeRem > 0){
+                byte[] data = new byte[Integer.min(fileSizeRem, 1000)];
+                server.read(data, 0, Integer.min(fileSizeRem, 1000));
+                fpout.write(data, 0, Integer.min(fileSizeRem, 1000));
+                fileSizeRem -= 1000;
+            }
+            fpout.close();
+        }
+        catch(IOException e){
+            System.out.print(e.toString());
         }
     }
 }
