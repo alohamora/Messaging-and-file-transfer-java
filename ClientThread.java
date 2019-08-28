@@ -105,28 +105,33 @@ public class ClientThread extends Thread{
         }
     }
 
-    public void download_file(String filename){
+    public void download_file(String filepath){
         try{
             DataOutputStream clientOutput = new DataOutputStream(clientSock.getOutputStream());
-            File file = new File(Server.SERVER_FOLDER + username + "/" + filename);
-            if(file.isFile()){
-                clientOutput.writeUTF("start-download " + filename + " " + file.length());
-                InputStream in = new BufferedInputStream(new FileInputStream(file));
-                int fileSize = (int)file.length();
-                while(fileSize > 0){
-                    byte[] buf = new byte[Integer.min(fileSize, 1000)];
-                    in.read(buf, 0, Integer.min(fileSize, 1000));
-                    clientOutput.write(buf, 0, Integer.min(fileSize, 1000));
-                    fileSize -= 1000;
+            String[] tokens = filepath.split("/");
+            if(tokens.length == 3){
+                if(Server.check_usr_group(tokens[0], tokens[1], clientSock)){
+                    File file = new File(Server.SERVER_FOLDER + tokens[1] + "/" + tokens[2]);
+                    if(file.isFile()){
+                        clientOutput.writeUTF("start-download " + tokens[2] + " " + file.length());
+                        InputStream in = new BufferedInputStream(new FileInputStream(file));
+                        int fileSize = (int)file.length();
+                        while(fileSize > 0){
+                            byte[] buf = new byte[Integer.min(fileSize, 1000)];
+                            in.read(buf, 0, Integer.min(fileSize, 1000));
+                            clientOutput.write(buf, 0, Integer.min(fileSize, 1000));
+                            fileSize -= 1000;
+                        }
+                        in.close();
+                        clientOutput.writeUTF(Server.get_time_string() + "File downloaded");
+                        System.out.println(Server.get_time_string() + "File downloaded for user:" + username + ", File Name: " + tokens[2]);
+                    }
+                    else if(file.isDirectory())
+                        clientOutput.writeUTF(Server.get_time_string() + "Given path is a folder");
+                    else
+                        clientOutput.writeUTF(Server.get_time_string() + "Given path does not exist");
                 }
-                in.close();
-                clientOutput.writeUTF(Server.get_time_string() + "File downloaded");
-                System.out.println(Server.get_time_string() + "File downloaded for user:" + username + ", File Name: " + filename);
             }
-            else if(file.isDirectory())
-                clientOutput.writeUTF(Server.get_time_string() + "Given path is a folder");
-            else
-                clientOutput.writeUTF(Server.get_time_string() + "Given path does not exist");
         }
         catch(IOException e){
             System.out.println(e.toString());

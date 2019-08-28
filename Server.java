@@ -218,6 +218,33 @@ public class Server {
         }
     }
 
+    public static Boolean check_usr_group(String groupname, String username, Socket clientSock){
+        try{
+            DataOutputStream dout = new DataOutputStream(clientSock.getOutputStream());
+            Group groupObj = new Group(groupname, username, clientSock);
+            Boolean check = false;
+            for(int i=0;i<groups.size();i++){
+                if(groups.get(i).groupName.equals(groupname)){
+                    groupObj = groups.get(i);
+                    check = true;
+                }
+            }
+            if(check == true){
+                if(clientGroupMapping.containsKey(username)){
+                    if(clientGroupMapping.get(username).contains(groupObj))
+                        return true;
+                    else   dout.writeUTF(get_time_string() + "The given user does not exist in this group"); 
+                }
+                else
+                    dout.writeUTF(get_time_string() + "The given user does not exist");
+            }
+            else    dout.writeUTF(get_time_string() + "The given group does not exist");
+        }
+        catch(IOException e){
+            System.out.println(e.toString());
+        }
+        return false;
+    }
     public static String get_time_string(){
         DateTimeFormatter dtf = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");  
         LocalDateTime now = LocalDateTime.now();  
